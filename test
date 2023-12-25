@@ -1,0 +1,148 @@
+import tkinter as tk
+from tkinter import ttk
+import json
+
+class PageOne(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        # تنظیمات اولیه صفحه اصلی
+        self.title("Control Page")
+        self.geometry("400x400")
+
+        # ایجاد فریم اصلی
+        self.frame = ttk.Frame(self)
+        self.frame.pack(pady=20)
+
+        # ایجاد برچسب‌های "user" و "pass"
+        ttk.Label(self.frame, text="user").grid(row=0, column=0)
+        ttk.Label(self.frame, text="pass").grid(row=0, column=1)
+
+        # لیست برچسب‌های نمایش داده شده
+        self.user_labels = []
+        self.password_labels = []
+
+        # ایجاد دکمه‌ها
+        ttk.Button(self, text="Add", command=self.open_add_page).pack(pady=20)
+        ttk.Button(self, text="Remove", command=self.remove_user).pack(pady=20)
+
+        # بارگذاری اطلاعات از فایل
+        self.load_data()
+        # به‌روزرسانی برچسب‌ها با اطلاعات بارگذاری شده
+        self.update_user_labels()
+
+        # متصل کردن رویداد بستن به تابع مربوطه
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def open_add_page(self):
+        # باز کردن صفحه افزودن کاربر
+        add_page = AddPage(self)
+        add_page.grab_set()
+        add_page.protocol("WM_DELETE_WINDOW", self.update_user_labels)
+
+    def remove_user(self):
+        # حذف آخرین کاربر از لیست
+        if userNameList:
+            userNameList.pop()
+            passwordList.pop()
+            # به‌روزرسانی برچسب‌ها
+            self.update_user_labels()
+            # ذخیره اطلاعات پس از حذف یک کاربر
+            self.save_data()
+
+    def update_user_labels(self):
+        # حذف برچسب‌های نمایش داده شده
+        for label in self.user_labels + self.password_labels:
+            label.destroy()
+
+        # ایجاد برچسب‌های "user" و "pass" مجدد
+        ttk.Label(self.frame, text="user").grid(row=0, column=0)
+        ttk.Label(self.frame, text="pass").grid(row=0, column=1)
+
+        # به‌روزرسانی برچسب‌ها بر اساس لیست کاربران و رمزهای عبور
+        for i in range(len(userNameList)):
+            user_label = ttk.Label(self.frame, text=userNameList[i])
+            user_label.grid(row=i + 1, column=0)
+            self.user_labels.append(user_label)
+
+            password_label = ttk.Label(self.frame, text=passwordList[i])
+            password_label.grid(row=i + 1, column=1)
+            self.password_labels.append(password_label)
+
+    def save_data(self):
+        # ذخیره اطلاعات لیست کاربران و رمزهای عبور در یک فایل JSON
+        data = {"usernames": userNameList, "passwords": passwordList}
+        with open("data.json", "w") as file:
+            json.dump(data, file)
+
+    def load_data(self):
+        try:
+            # بارگذاری اطلاعات از فایل JSON
+            with open("data.json", "r") as file:
+                data = json.load(file)
+                userNameList.extend(data["usernames"])
+                passwordList.extend(data["passwords"])
+        except FileNotFoundError:
+            pass  # نادیده گرفتن اگر فایل وجود نداشته باشد
+
+    def on_close(self):
+        # ذخیره اطلاعات در هنگام بستن برنامه
+        self.save_data()
+        self.destroy()
+
+class AddPage(tk.Toplevel):
+    def __init__(self, master):
+        super().__init__(master)
+
+        # تنظیمات صفحه افزودن کاربر
+        self.title("Add Page")
+        self.geometry("300x300")
+
+        # ایجاد متغیرهای مربوط به نام کاربری و رمز عبور
+        self.userName = tk.StringVar()
+        self.passWorld = tk.StringVar()
+
+        # ایجاد فریم صفحه افزودن
+        frame = ttk.Frame(self)
+        frame.pack(pady=20)
+
+        # ایجاد برچسب ورودی نام کاربری
+        ttk.Label(frame, text="username").grid(row=0, column=0, padx=10, pady=10, sticky=tk.E)
+        # ایجاد ورودی نام کاربری
+        ttk.Entry(frame, textvariable=self.userName).grid(row=0, column=1, padx=10, pady=10)
+
+        # ایجاد برچسب ورودی رمز عبور
+        ttk.Label(frame, text="Password").grid(row=1, column=0, padx=10, pady=10, sticky=tk.E)
+        # ایجاد ورودی رمز عبور با نمایش "*"
+        ttk.Entry(frame, textvariable=self.passWorld, show="*").grid(row=1, column=1, padx=10, pady=10)
+
+        # ایجاد دکمه‌های تأیید و انصراف
+        ttk.Button(self, text="OK", command=self.add_user).pack(pady=20, side=tk.LEFT)
+        ttk.Button(self, text="Cancel", command=self.close_page).pack(pady=20, side=tk.RIGHT)
+
+    def add_user(self):
+        # گرفتن نام کاربری و رمز عبور از ورودی‌ها
+        user_name = self.userName.get()
+        password = self.passWorld.get()
+
+        # افزودن کاربر به لیست
+        if user_name and password:
+            userNameList.append(user_name)
+            passwordList.append(password)
+            # به‌روزرسانی برچسب‌ها در صفحه اصلی
+            self.master.update_user_labels()
+            # ذخیره اطلاعات پس از افزودن یک کاربر جدید
+            self.master.save_data()
+            # بستن صفحه افزودن
+            self.destroy()
+
+    def close_page(self):
+        # بستن صفحه افزودن
+        self.destroy()
+
+userNameList = ["user"]
+passwordList = ["pass"]
+
+if __name__ == "__main__":
+    app = PageOne()
+    app.mainloop()
